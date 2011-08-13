@@ -111,6 +111,9 @@ module Ruby2Scheme
       e! "("
       args.each do | x |
         e! " "
+        if (x = x.to_s.dup).sub!(/^\*/, '')
+          e! " . "
+        end
         e! x
       end
       e! ")"
