@@ -98,6 +98,14 @@ module Ruby2Scheme
     end
 
     def x_block head, args, *body
+      save_block_arg = @block_arg
+      @block_arg = :'r2s::blk'
+      body.each do | x |
+        if Array === x && x[0] == :block_arg
+          @block_arg = x[1]
+        end
+      end
+
       e! "(lambda "
       x! args
       e! " "
@@ -105,10 +113,16 @@ module Ruby2Scheme
         x! x
       end
       e! ")"
+    ensure
+      @block_arg = save_block_arg
+    end
+
+    def x_block_arg head, name
+      # @block_arg = name
     end
 
     def x_args head, *args
-      e! "("
+      e! "(", :self, " ", @block_arg
       args.each do | x |
         e! " "
         if (x = x.to_s.dup).sub!(/^\*/, '')
@@ -127,6 +141,18 @@ module Ruby2Scheme
       e! meth
       e! " "
       e! "self"
+      e! " "
+      e! nil # blk
+      array_each(args) do | x |
+        e! " "
+        x! x
+      end
+      e! ")"
+    end
+
+    def x_yield head, args = nil
+      e! "("
+      e! @block_arg
       array_each(args) do | x |
         e! " "
         x! x
@@ -149,6 +175,8 @@ module Ruby2Scheme
       e! meth
       e! " "
       x! rcvr
+      e! " "
+      x! nil # blk
       array_each(args) do | x |
         e! " "
         x! x
@@ -234,6 +262,7 @@ module Ruby2Scheme
     end
 
     def array_each a, &blk
+      return if a == nil
       raise TypeError unless Array === a
       raise ArgumentError unless :array === a.first
       a = a.dup
@@ -257,6 +286,12 @@ class Foo
   def foo x
     @z = x
     @@cv = @z + 1
+  end
+  def takes_block
+    yield
+  end
+  def takes_named_block &blk
+    yield 1, 2
   end
 end
 END
