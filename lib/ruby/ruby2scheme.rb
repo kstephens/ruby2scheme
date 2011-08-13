@@ -174,13 +174,30 @@ module Ruby2Scheme
       emit! ")"
     end
 
+    def x_iasgn head, name, value
+      emit! "(set! "
+      x_ivar head, name
+      emit! " "
+      x! value
+      emit! ")"
+    end
+
     def x_cvar head, sym
       emit! "(r2s:cvar '#{module_path * '::'} '"
       emit! sym
       emit! ")"
     end
-    def x_cvdecl head, name, value
+
+    def x_cvasgn head, name, value
       emit! "(set! "
+      x_cvar head, name
+      emit! " "
+      x! value
+      emit! ")"
+    end
+
+    def x_cvdecl head, name, value
+      emit! "  (set! "
       x_cvar :cvar, name
       emit! " "
       x! value
@@ -225,6 +242,7 @@ end
 
 r2s = Ruby2Scheme::Translator.new
 r2s.compile! "puts x + 5"
+
 #r2s.compile! "lambda { | x | x + 5 }"
 r2s.compile! <<"END"
 class Foo
@@ -232,6 +250,10 @@ class Foo
   @@cv = 123
   def bar x, y, *args
     x + y + @z + @@cv
+  end
+  def foo x
+    @z = x
+    @@cv = @z + 1
   end
 end
 END
