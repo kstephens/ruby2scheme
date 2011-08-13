@@ -5,10 +5,10 @@ require 'pp'
 
 module Ruby2Scheme
   class Translator
-    attr_accessor :output, :module
+    attr_accessor :output, :module_path
 
     def initialize
-      @module = [ ]
+      @module_path = [ ]
     end
 
     def parse expr 
@@ -55,8 +55,8 @@ module Ruby2Scheme
     end
 
     def x_class head, name, thing, scope
-      save_module = @module
-      @module = @module.dup << name
+      save_module_path = @module_path
+      @module_path = @module_path.dup << name
 
       emit! "(r2s:class '"
       emit! name
@@ -64,7 +64,7 @@ module Ruby2Scheme
       x_class! scope
       emit! ")"
     ensure
-      @module = save_module
+      @module_path = save_module_path
     end
 
     def x_class_scope head, *exprs
@@ -174,6 +174,19 @@ module Ruby2Scheme
       emit! ")"
     end
 
+    def x_cvar head, sym
+      emit! "(r2s:cvar '#{module_path * '::'} '"
+      emit! sym
+      emit! ")"
+    end
+    def x_cvdecl head, name, value
+      emit! "(set! "
+      x_cvar :cvar, name
+      emit! " "
+      x! value
+      emit! ")"
+    end
+
     def x_lit head, val
       case val
       when Symbol
@@ -183,12 +196,18 @@ module Ruby2Scheme
       end
     end
 
-
     def compile_nil
       emit! 'nil'
     end
 
-    def emit! x
+    def emit! *args
+      args.each do | x |
+        _emit! x
+      end
+      self
+    end
+
+    def _emit! x
       @output << x.to_s
       $stderr.puts "  output = #{@output}" if @emit_debug
       self
@@ -210,8 +229,9 @@ r2s.compile! "puts x + 5"
 r2s.compile! <<"END"
 class Foo
   attr_accessor :a, :b
+  @@cv = 123
   def bar x, y, *args
-    x + y + @z
+    x + y + @z + @@cv
   end
 end
 END
