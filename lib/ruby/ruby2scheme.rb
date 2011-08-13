@@ -99,7 +99,7 @@ module Ruby2Scheme
 
     def x_block head, args, *body
       save_block_arg = @block_arg
-      @block_arg = :'r2s::blk'
+      @block_arg = :'r2s:blk'
       body.each do | x |
         if Array === x && x[0] == :block_arg
           @block_arg = x[1]
@@ -133,14 +133,28 @@ module Ruby2Scheme
       e! ")"
     end
 
-    def x_fcall head, meth, args
-      s = :"x_fcall_#{meth}"
-      s = send(s, head, meth, args) if respond_to?(s)
+    def x_fcall head, sel, args
+      s = :"x_fcall_#{sel}"
+      s = send(s, head, sel, args) if respond_to?(s)
       return if s
       e! "(r2s:send '"
-      e! meth
+      e! sel
       e! " "
       e! "self"
+      e! " "
+      e! nil # blk
+      array_each(args) do | x |
+        e! " "
+        x! x
+      end
+      e! ")"
+    end
+
+    def x_call head, rcvr, sel
+      e! "(r2s:send '"
+      e! sel
+      e! " "
+      x! rcvr
       e! " "
       e! nil # blk
       array_each(args) do | x |
@@ -177,6 +191,20 @@ module Ruby2Scheme
       x! rcvr
       e! " "
       x! nil # blk
+      array_each(args) do | x |
+        e! " "
+        x! x
+      end
+      e! ")"
+    end
+
+    def x_callb head, rcvr, meth, args, block
+      e! "(r2s:send '"
+      e! meth
+      e! " "
+      x! rcvr
+      e! " "
+      x! block
       array_each(args) do | x |
         e! " "
         x! x
@@ -243,6 +271,23 @@ module Ruby2Scheme
         e! val.inspect
       end
     end
+    
+    def x_iter head, call, *block
+      block = [ :blockx, *block ]
+      call = call.dup
+      call << block
+      call[0] = :"#{call[0]}b"
+      x! call
+    end
+   
+    def x_blockx head, args, *body
+      e! "(lambda r2s:args "
+      e! " "
+      body.each do | x |
+        x! x
+      end
+      e! ")"
+    end
 
     def compile_nil
       e! 'nil'
@@ -292,6 +337,11 @@ class Foo
   end
   def takes_named_block &blk
     yield 1, 2
+  end
+  def uses_a_block
+    @a.foo(1, 2) do | x, y |
+      puts x
+    end
   end
 end
 END
