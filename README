@@ -1,0 +1,4 @@
+Do this:
+
+ruby -rubygems lib/ruby/ruby2scheme.rb
+
