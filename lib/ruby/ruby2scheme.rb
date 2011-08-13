@@ -168,6 +168,12 @@ module Ruby2Scheme
       emit! sym
     end
 
+    def x_ivar head, sym
+      emit! "(r2s:ivar self '"
+      emit! sym
+      emit! ")"
+    end
+
     def x_lit head, val
       case val
       when Symbol
@@ -176,6 +182,7 @@ module Ruby2Scheme
         emit! val.inspect
       end
     end
+
 
     def compile_nil
       emit! 'nil'
@@ -204,7 +211,7 @@ r2s.compile! <<"END"
 class Foo
   attr_accessor :a, :b
   def bar x, y, *args
-    x + y
+    x + y + @z
   end
 end
 END
