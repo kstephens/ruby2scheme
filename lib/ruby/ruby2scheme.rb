@@ -58,11 +58,11 @@ module Ruby2Scheme
       save_module_path = @module_path
       @module_path = @module_path.dup << name
 
-      emit! "(r2s:class '"
-      emit! name
-      emit! "\n"
+      e! "(r2s:class '"
+      e! name
+      e! "\n"
       x_class! scope
-      emit! ")"
+      e! ")"
     ensure
       @module_path = save_module_path
     end
@@ -70,7 +70,7 @@ module Ruby2Scheme
     def x_class_scope head, *exprs
       exprs.each do | x |
         x_class! x
-        emit! "\n"
+        e! "\n"
       end
     end
 
@@ -78,16 +78,16 @@ module Ruby2Scheme
       # $stderr.puts "  x_class_block exprs = #{exprs.inspect}"
       exprs.each do | x |
         x! x
-        emit! "\n"
+        e! "\n"
       end
     end
 
     def x_defn head, name, scope
-      emit! "  (r2s:def '"
-      emit! name
-      emit! " "
+      e! "  (r2s:def '"
+      e! name
+      e! " "
       x_defn_scope scope
-      emit! ")\n"
+      e! ")\n"
     end
 
     def x_defn_scope scope
@@ -98,133 +98,133 @@ module Ruby2Scheme
     end
 
     def x_block head, args, *body
-      emit! "(lambda "
+      e! "(lambda "
       x! args
-      emit! " "
+      e! " "
       body.each do | x |
         x! x
       end
-      emit! ")"
+      e! ")"
     end
 
     def x_args head, *args
-      emit! "("
+      e! "("
       args.each do | x |
-        emit! " "
-        emit! x
+        e! " "
+        e! x
       end
-      emit! ")"
+      e! ")"
     end
 
     def x_fcall head, meth, args
       s = :"x_fcall_#{meth}"
       s = send(s, head, meth, args) if respond_to?(s)
       return if s
-      emit! "(r2s:send '"
-      emit! meth
-      emit! " "
-      emit! "self"
+      e! "(r2s:send '"
+      e! meth
+      e! " "
+      e! "self"
       array_each(args) do | x |
-        emit! " "
+        e! " "
         x! x
       end
-      emit! ")"
+      e! ")"
     end
 
     def x_fcall_attr_accessor head, meth, args
-      emit! "  (r2s:attr_accessor "
+      e! "  (r2s:attr_accessor "
       array_each(args) do | x |
-        emit! " "
+        e! " "
         x! x
       end
-      emit! ")"
+      e! ")"
       self
     end
 
     def x_call head, rcvr, meth, args
-      emit! "(r2s:send '"
-      emit! meth
-      emit! " "
+      e! "(r2s:send '"
+      e! meth
+      e! " "
       x! rcvr
       array_each(args) do | x |
-        emit! " "
+        e! " "
         x! x
       end
-      emit! ")"
+      e! ")"
     end
 
     def x_array head, *exprs
       exprs.each do | x |
-        emit! " "
+        e! " "
         x! x
       end
     end
 
     def x_vcall head, sym
-      emit! sym
+      e! sym
     end
 
     def x_lvar head, sym
-      emit! sym
+      e! sym
     end
 
     def x_ivar head, sym
-      emit! "(r2s:ivar self '"
-      emit! sym
-      emit! ")"
+      e! "(r2s:ivar self '"
+      e! sym
+      e! ")"
     end
 
     def x_iasgn head, name, value
-      emit! "(set! "
+      e! "(set! "
       x_ivar head, name
-      emit! " "
+      e! " "
       x! value
-      emit! ")"
+      e! ")"
     end
 
     def x_cvar head, sym
-      emit! "(r2s:cvar '#{module_path * '::'} '"
-      emit! sym
-      emit! ")"
+      e! "(r2s:cvar '#{module_path * '::'} '"
+      e! sym
+      e! ")"
     end
 
     def x_cvasgn head, name, value
-      emit! "(set! "
+      e! "(set! "
       x_cvar head, name
-      emit! " "
+      e! " "
       x! value
-      emit! ")"
+      e! ")"
     end
 
     def x_cvdecl head, name, value
-      emit! "  (set! "
+      e! "  (set! "
       x_cvar :cvar, name
-      emit! " "
+      e! " "
       x! value
-      emit! ")"
+      e! ")"
     end
 
     def x_lit head, val
       case val
       when Symbol
-        emit! "'#{val}"
+        e! "'#{val}"
       else
-        emit! val.inspect
+        e! val.inspect
       end
     end
 
     def compile_nil
-      emit! 'nil'
+      e! 'nil'
     end
 
-    def emit! *args
+    def e! *args
       args.each do | x |
-        _emit! x
+        _e! x
       end
       self
     end
 
-    def _emit! x
+    def _e! x
       @output << x.to_s
       $stderr.puts "  output = #{@output}" if @emit_debug
       self
